@@ -1,23 +1,24 @@
-import { Coord, FieldCell } from 'core/types';
-import { isCoordEqual } from 'core/auxs';
+import { Coord, FieldCell, Field } from 'core/types';
+import { isCoordEqual, isArrIncludesCoord } from 'core/auxs';
 
-export const RATES = { easy: 0.12, common: 0.16, hard: 0.2 };
+export const RATES = { normal: 0.12, hard: 0.18, expert: 0.24 };
 
 const generateMines = (x: number, y: number, rate: number, cleanCell: Coord): Coord[] => {
+  const noMineCoords = [cleanCell, ...aroundCoords(cleanCell, x, y)];
   let mineCount = Math.floor(x * y * rate);
   let mines: Coord[] = [];
   while (mineCount > 0) {
-    const mine = { x: Math.floor(Math.random() * x), y: Math.floor(Math.random() * y) };
-    if (!isCoordEqual(cleanCell, mine) && !mines.some(v => isCoordEqual(v, mine))) {
-      mines.push(mine);
+    const maybeMine = { x: Math.floor(Math.random() * x), y: Math.floor(Math.random() * y) };
+    if (!isArrIncludesCoord(noMineCoords, maybeMine) && !isArrIncludesCoord(mines, maybeMine)) {
+      mines.push(maybeMine);
       mineCount -= 1;
     }
   }
   return mines;
 };
 
-const generateCells = (x: number, y: number, mines: Coord[]): FieldCell[][] => {
-  let acc: FieldCell[][] = [];
+const generateField = (x: number, y: number, mines: Coord[]): Field => {
+  let acc: Field = [];
   for (let i = 1; i <= y; i += 1) {
     let _acc_: FieldCell[] = [];
     for (let j = 1; j <= x; j += 1) {
@@ -36,9 +37,19 @@ const generateCells = (x: number, y: number, mines: Coord[]): FieldCell[][] => {
 export const generate = (
   x: number = 10,
   y: number = 18,
-  rate: number = RATES.easy,
+  rate: number = RATES.normal,
   cleanCell: Coord = { x: 1, y: 1 }
-): FieldCell[][] => {
+): Field => {
   const mines = generateMines(x, y, rate, cleanCell);
-  return generateCells(x, y, mines);
+  return generateField(x, y, mines);
+};
+
+export const aroundCoords = ({ x, y }: Coord, xLength: number, yLength: number): Coord[] => {
+  let acc: Coord[] = [];
+  [x - 1, x, x + 1].forEach(x => {
+    [y - 1, y, y + 1].forEach(y => {
+      acc.push({ x, y });
+    });
+  });
+  return acc.filter(({ x, y }) => x > 0 && xLength >= x && y > 0 && yLength >= y);
 };

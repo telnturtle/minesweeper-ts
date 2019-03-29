@@ -8,3 +8,5 @@ export interface FieldCell {
   y: number;
   mine: boolean;
 }
+
+export type Field = FieldCell[][];
