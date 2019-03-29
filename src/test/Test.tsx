@@ -65,8 +65,6 @@ export default class Test extends Component<any> {
       try {
         return cellss[y][x].mine;
       } catch (error) {
-        // console.error(error);
-        console.error('cellss, x, y ', cellss, x, y);
         return false;
       }
     };

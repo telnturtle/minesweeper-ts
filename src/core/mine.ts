@@ -18,10 +18,10 @@ const generateMines = (x: number, y: number, rate: number, cleanCell: Coord): Co
 
 const generateCells = (x: number, y: number, mines: Coord[]): FieldCell[][] => {
   let acc: FieldCell[][] = [];
-  for (let i = 1; i <= x; i += 1) {
+  for (let i = 1; i <= y; i += 1) {
     let _acc_: FieldCell[] = [];
-    for (let j = 1; j <= y; j += 1) {
-      const _coord_ = { x: i, y: j };
+    for (let j = 1; j <= x; j += 1) {
+      const _coord_ = { x: j, y: i };
       if (mines.some(v => isCoordEqual(_coord_, v))) {
         _acc_.push({ ..._coord_, mine: true });
       } else {
