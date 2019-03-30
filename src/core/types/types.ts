@@ -10,3 +10,11 @@ export interface FieldCell {
 }
 
 export type Field = FieldCell[][];
+
+export interface MapCell {
+  x: number;
+  y: number;
+  opened: boolean;
+}
+
+export type Map = MapCell[][];

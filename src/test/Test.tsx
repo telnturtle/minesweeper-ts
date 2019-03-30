@@ -4,19 +4,20 @@ import React, { Component } from 'react';
 import { generate, RATES, aroundCoords } from '../core/mine';
 
 // types
-import { FieldCell, Coord, Field } from 'core/types';
+import { FieldCell, Coord, Field, MapCell, Map } from 'core/types';
 
 // auxs
 import { isCoordEqual, isArrIncludesCoord } from '../core/auxs';
 
 interface State {
   string: string;
+  opened: Coord[];
 }
 
 // constructor에서 this.state: State = {}를 사용하려면 선언을 다음과 같은 형식으로 해 줘야 함:
 // Component<any, State>
 export default class Test extends Component<any> {
-  state: State = { string: 'hello' };
+  state: State = { string: 'hello', opened: [] };
   map1_number: string = '';
   map1_mine: string = '';
   map2_number: string = '';
@@ -37,18 +38,31 @@ export default class Test extends Component<any> {
     this.map2_number = this.renderFieldNumber(this.field2);
     this.map2_mine = this.renderFieldMine(
       this.field2,
-      this.getCleanCellsByCoord(initialClickCoord, this.field2, [])
+      // this.getCleanCellsByCoord(initialClickCoord, this.field2, [])
+      []
     );
     console.log(this.map2_number);
     console.log(this.map2_mine);
-
-    console.log('8, 16 , ', this.getMineCountByCoord({x:8,y:16}, this.field2))
+    console.log('8, 16 , ', this.getMineCountByCoord({ x: 8, y: 16 }, this.field2));
+    this.setState({ opened: this.getCleanCellsByCoord(initialClickCoord, this.field2, []) }, () => {
+      this.onClick({ x: 2, y: 2 });
+      setTimeout(() => {
+        this.map2_mine = this.renderFieldMine(this.field2, this.state.opened);
+        console.log(this.map2_mine);
+      }, 1000);
+    });
   }
 
-  renderFieldNumber = (field: Field): string => {
+  renderFieldNumber = (field: Field, opened: Coord[] = []): string => {
     const map: string = field
       .map(row =>
-        row.map(cell => this.isCellMine(cell, field) ? 'X' : this.getMineCountByCoord({ x: cell.x, y: cell.y }, field)).join(' ')
+        row
+          .map(cell =>
+            this.isCellMine(cell, field)
+              ? 'X'
+              : this.getMineCountByCoord({ x: cell.x, y: cell.y }, field)
+          )
+          .join(' ')
       )
       .join('\n');
     return map;
@@ -65,7 +79,7 @@ export default class Test extends Component<any> {
 
   isCellMine = ({ x, y }: Coord, field: Field) => field[y - 1][x - 1].mine;
 
-  getCleanCellsByCoord = (coord: Coord, field: Field, openedCell: FieldCell[]): Coord[] => {
+  getCleanCellsByCoord = (coord: Coord, field: Field, openedCell: Coord[]): Coord[] => {
     const xLength: number = field[0].length;
     const yLength: number = field.length;
 
@@ -97,40 +111,37 @@ export default class Test extends Component<any> {
 
   getMineCountByCoord = (coord: Coord, field: Field): number => {
     if (this.isCellMine(coord, field)) return 9;
+
     let acc = 0;
-
-    // const x = coord.x - 1;
-    // const y = coord.y - 1;
-    const xLength: number = field[0].length;
-    const yLength: number = field.length;
-    // const xLeft: boolean = x > 0;
-    // const xRight: boolean = x < xLength - 1;
-    // const yLeft: boolean = y > 0;
-    // const yRight: boolean = y < yLength - 1;
-
-    // const auxCoord2Mine = (x: number, y: number): boolean => {
-    //   try {
-    //     return field[y][x].mine;
-    //   } catch (error) {
-    //     return false;
-    //   }
-    // };
-    // // const auxCoord2Mine = (x: number, y: number): boolean => cellss[x][y].mine;
-
-    // if (yLeft && xLeft) acc += this.isCellMine({ x: x - 1, y: y - 1 }, field) ? 1 : 0;
-    // if (yLeft) acc += this.isCellMine({ x: x, y: y - 1 }, field) ? 1 : 0;
-    // if (yLeft && xRight) acc += this.isCellMine({ x: x + 1, y: y - 1 }, field) ? 1 : 0;
-    // if (xLeft) acc += this.isCellMine({ x: x - 1, y }, field) ? 1 : 0;
-    // if (xRight) acc += this.isCellMine({ x: x + 1, y }, field) ? 1 : 0;
-    // if (yRight && xLeft) acc += this.isCellMine({ x: x - 1, y: y + 1 }, field) ? 1 : 0;
-    // if (yRight) acc += this.isCellMine({ x: x, y: y + 1 }, field) ? 1 : 0;
-    // if (yRight && xRight) acc += this.isCellMine({ x: x + 1, y: y + 1 }, field) ? 1 : 0;
-
+    const { xLength, yLength } = this.getXYLength(field);
     aroundCoords(coord, xLength, yLength).forEach(coord => {
       acc += this.isCellMine(coord, field) ? 1 : 0;
     });
 
     return acc;
+  };
+
+  openCell = (coord: Coord): void => {
+    const prevOpened = this.state.opened.map(({ x, y }) => ({ x, y }));
+    const { xLength, yLength } = this.getXYLength(this.field2);
+    const aroundsToOpen = aroundCoords(coord, xLength, yLength).filter(
+      c => !isArrIncludesCoord(prevOpened, c) && this.isCellMine(c, this.field2)
+    );
+
+    this.setState({ opened: this.state.opened.concat(aroundsToOpen) });
+  };
+
+  getXYLength = (arr: any[][]): { xLength: number; yLength: number } => ({
+    xLength: arr[0].length,
+    yLength: arr.length
+  });
+
+  onClick = (coord: Coord): void => {
+    if (this.isCellMine(coord, this.field2)) {
+      // TODO: bang
+      window.alert('Bang!');
+    }
+    this.openCell(coord);
   };
 
   render() {
@@ -140,9 +151,9 @@ export default class Test extends Component<any> {
           {this.renderFieldNumber}
           <button
             onClick={(): void => {
-              this.setState(
-                ({ string }: State): State => ({ string: string === 'hello' ? 'world' : 'hello' })
-              );
+              this.setState(({ string }: State) => ({
+                string: string === 'hello' ? 'world' : 'hello'
+              }));
             }}
           >
             {this.state.string}
