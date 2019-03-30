@@ -12,76 +12,29 @@ import { isCoordEqual, isArrIncludesCoord } from '../core/auxs';
 interface State {
   string: string;
   opened: Coord[];
+  field: Field;
 }
 
 // constructor에서 this.state: State = {}를 사용하려면 선언을 다음과 같은 형식으로 해 줘야 함:
 // Component<any, State>
 export default class Test extends Component<any> {
-  state: State = { string: 'hello', opened: [] };
-  map1_number: string = '';
-  map1_mine: string = '';
-  map2_number: string = '';
-  map2_mine: string = '';
-  field1: Field = [[]];
-  field2: Field = [[]];
+  state: State = { string: 'hello', opened: [], field: [] };
 
-  componentDidMount() {
-    this.field1 = generate(5, 5, RATES.normal, { x: 2, y: 2 });
-    this.map1_number = this.renderFieldNumber(this.field1);
-    this.map1_mine = this.renderFieldMine(this.field1);
-    console.log(this.map1_number);
-    console.log(this.map1_mine);
+  componentDidMount() {}
 
-    const initialClickCoord = { x: 5, y: 10 };
-    console.log('\n\n5, 10, normal ');
-    this.field2 = generate(10, 18, RATES.normal, initialClickCoord);
-    this.map2_number = this.renderFieldNumber(this.field2);
-    this.map2_mine = this.renderFieldMine(
-      this.field2,
-      // this.getCleanCellsByCoord(initialClickCoord, this.field2, [])
-      []
-    );
-    console.log(this.map2_number);
-    console.log(this.map2_mine);
-    console.log('8, 16 , ', this.getMineCountByCoord({ x: 8, y: 16 }, this.field2));
-    this.setState({ opened: this.getCleanCellsByCoord(initialClickCoord, this.field2, []) }, () => {
-      this.onClick({ x: 2, y: 2 });
-      setTimeout(() => {
-        this.map2_mine = this.renderFieldMine(this.field2, this.state.opened);
-        console.log(this.map2_mine);
-      }, 1000);
-    });
-  }
-
-  renderFieldNumber = (field: Field, opened: Coord[] = []): string => {
-    const map: string = field
-      .map(row =>
-        row
-          .map(cell =>
-            this.isCellMine(cell, field)
-              ? 'X'
-              : this.getMineCountByCoord({ x: cell.x, y: cell.y }, field)
-          )
-          .join(' ')
-      )
-      .join('\n');
-    return map;
-  };
-
-  renderFieldMine = (field: Field, clicked: Coord[] = []): string => {
-    const map: string = field
-      .map(row =>
-        row.map(cell => (cell.mine ? 'X' : isArrIncludesCoord(clicked, cell) ? 'C' : 'O')).join(' ')
-      )
-      .join('\n');
-    return map;
-  };
-
+  // isCellMine = ({ x, y }: Coord, field: Field) => {
+  //   try {
+  //     return field[y - 1][x - 1].mine;
+  //   } catch (error) {
+  //     console.log('coord ', x, y);
+  //   }
+  // };
   isCellMine = ({ x, y }: Coord, field: Field) => field[y - 1][x - 1].mine;
 
   getCleanCellsByCoord = (coord: Coord, field: Field, openedCell: Coord[]): Coord[] => {
     const xLength: number = field[0].length;
     const yLength: number = field.length;
+    // console.log('field ', field);
 
     let queue: Coord[] = [coord];
     let acc: Coord[] = [];
@@ -122,10 +75,12 @@ export default class Test extends Component<any> {
   };
 
   openCell = (coord: Coord): void => {
-    const prevOpened = this.state.opened.map(({ x, y }) => ({ x, y }));
-    const { xLength, yLength } = this.getXYLength(this.field2);
-    const aroundsToOpen = aroundCoords(coord, xLength, yLength).filter(
-      c => !isArrIncludesCoord(prevOpened, c) && this.isCellMine(c, this.field2)
+    const aroundsToOpen = this.getCleanCellsByCoord(
+      coord,
+      this.state.field,
+      this.state.opened
+    ).filter(
+      c => !isArrIncludesCoord(this.state.opened, c) && !this.isCellMine(c, this.state.field)
     );
 
     this.setState({ opened: this.state.opened.concat(aroundsToOpen) });
@@ -137,18 +92,30 @@ export default class Test extends Component<any> {
   });
 
   onClick = (coord: Coord): void => {
-    if (this.isCellMine(coord, this.field2)) {
-      // TODO: bang
-      window.alert('Bang!');
+    // init
+    if (this.state.field.length === 0) {
+      const field = generate(10, 18, RATES.normal, coord);
+      this.setState({ field }, () => {
+        this.openCell(coord);
+      });
     }
-    this.openCell(coord);
+    // not init
+    else {
+      if (this.isCellMine(coord, this.state.field)) {
+        // TODO: bang
+        window.alert('Bang!');
+      } else {
+        this.openCell(coord);
+      }
+    }
   };
+
+  isOpened = (c: Coord): boolean => isArrIncludesCoord(this.state.opened, c);
 
   render() {
     return (
       <div>
         <div>
-          {this.renderFieldNumber}
           <button
             onClick={(): void => {
               this.setState(({ string }: State) => ({
@@ -158,6 +125,44 @@ export default class Test extends Component<any> {
           >
             {this.state.string}
           </button>
+          <div>
+            {this.state.field.length === 0
+              ? Array(18)
+                  .fill(null)
+                  .map((n, y) => (
+                    <div style={{ display: 'flex' }}>
+                      {Array(10)
+                        .fill(null)
+                        .map((n, x) => (
+                          <div
+                            onClick={() => this.onClick({ x: x + 1, y: y + 1 })}
+                            style={{ width: '40px', height: '40px', backgroundColor: 'gray' }}
+                            // key={`${x}-${y}`}
+                          >
+                            9
+                          </div>
+                        ))}
+                    </div>
+                  ))
+              : this.state.field.map(row => (
+                  <div style={{ display: 'flex' }}>
+                    {row.map(({ x, y, mine }) => (
+                      <div
+                        style={{ width: '40px', height: '40px', backgroundColor: 'gray' }}
+                        key={`${x}-${y}`}
+                        onClick={() => this.onClick({ x, y })}
+                      >
+                        {this.isOpened({ x, y })
+                          ? // true
+                            mine
+                            ? 'X'
+                            : this.getMineCountByCoord({ x, y }, this.state.field)
+                          : '?'}
+                      </div>
+                    ))}
+                  </div>
+                ))}
+          </div>
         </div>
       </div>
     );
