@@ -1,5 +1,5 @@
 import { Coord, FieldCell, Field } from 'core/types';
-import { isCoordEqual, isArrIncludesCoord } from 'core/auxs';
+import { isCoordEqual, isArrIncludesCoord } from './auxs';
 
 export const RATES = { normal: 0.12, hard: 0.18, expert: 0.24 };
 

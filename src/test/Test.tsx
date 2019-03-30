@@ -1,13 +1,13 @@
 import React, { Component } from 'react';
 
 // cores
-import { generate, RATES, aroundCoords } from 'core/mine';
+import { generate, RATES, aroundCoords } from '../core/mine';
 
 // types
 import { FieldCell, Coord, Field } from 'core/types';
 
 // auxs
-import { isCoordEqual, isArrIncludesCoord } from 'core/auxs';
+import { isCoordEqual, isArrIncludesCoord } from '../core/auxs';
 
 interface State {
   string: string;
