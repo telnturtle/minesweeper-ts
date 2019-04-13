@@ -22,22 +22,14 @@ export default class Test extends Component<any> {
 
   componentDidMount() {}
 
-  // isCellMine = ({ x, y }: Coord, field: Field) => {
-  //   try {
-  //     return field[y - 1][x - 1].mine;
-  //   } catch (error) {
-  //     console.log('coord ', x, y);
-  //   }
-  // };
   isCellMine = ({ x, y }: Coord, field: Field) => field[y - 1][x - 1].mine;
 
   getCleanCellsByCoord = (coord: Coord, field: Field, openedCell: Coord[]): Coord[] => {
     const xLength: number = field[0].length;
     const yLength: number = field.length;
-    // console.log('field ', field);
 
     let queue: Coord[] = [coord];
-    let acc: Coord[] = [];
+    let acc: Coord[] = [coord];
     let openedOrMines: Coord[] = openedCell.map(({ x, y }) => ({ x, y }));
     const _f_ = (c: Coord) => {
       if (!isArrIncludesCoord(openedOrMines, c) && !isArrIncludesCoord(acc, c)) {
@@ -58,7 +50,6 @@ export default class Test extends Component<any> {
       if (x - 1 > 0) _f_({ x: x - 1, y });
       if (xLength >= x + 1) _f_({ x: x + 1, y });
     }
-
     return acc;
   };
 
@@ -74,16 +65,25 @@ export default class Test extends Component<any> {
     return acc;
   };
 
+  // if getMineCountByCoord === 0 then open wide else only open clicked cell
+  // TODO: else 로직 확인  
   openCell = (coord: Coord): void => {
-    const aroundsToOpen = this.getCleanCellsByCoord(
-      coord,
-      this.state.field,
-      this.state.opened
-    ).filter(
-      c => !isArrIncludesCoord(this.state.opened, c) && !this.isCellMine(c, this.state.field)
-    );
+    // If the cell's around mine count equals 0
+    if (this.getMineCountByCoord(coord, this.state.field) !== 0) {
+      this.concatToOpened(coord);
+    }
+    // Else
+    else {
+      const { xLength, yLength } = this.getXYLength(this.state.field);
+      const toOpen = this.getCleanCellsByCoord(coord, this.state.field, this.state.opened)
+        .filter(c => !isArrIncludesCoord(this.state.opened, c))
+        .map(c => aroundCoords(c, xLength, yLength))
+        .flat()
+        .reduce((acc: Coord[], c) => (!isArrIncludesCoord(acc, c) ? acc.concat(c) : acc), [])
+        .filter(c => !this.isCellMine(c, this.state.field));
 
-    this.setState({ opened: this.state.opened.concat(aroundsToOpen) });
+      this.concatToOpened(toOpen);
+    }
   };
 
   getXYLength = (arr: any[][]): { xLength: number; yLength: number } => ({
@@ -101,16 +101,16 @@ export default class Test extends Component<any> {
     }
     // not init
     else {
-      if (this.isCellMine(coord, this.state.field)) {
-        // TODO: bang
-        window.alert('Bang!');
-      } else {
-        this.openCell(coord);
-      }
+      if (this.isCellMine(coord, this.state.field)) window.alert('Bang!');
+      else this.openCell(coord);
     }
   };
 
   isOpened = (c: Coord): boolean => isArrIncludesCoord(this.state.opened, c);
+
+  concatToOpened = (toConcat: Coord | Coord[], callback = () => {}) => {
+    this.setState({ opened: this.state.opened.concat(toConcat) }, callback);
+  };
 
   render() {
     return (
@@ -130,34 +130,38 @@ export default class Test extends Component<any> {
               ? Array(18)
                   .fill(null)
                   .map((n, y) => (
-                    <div style={{ display: 'flex' }}>
+                    <div key={`temp-${y}`} style={{ display: 'flex' }}>
                       {Array(10)
                         .fill(null)
                         .map((n, x) => (
                           <div
                             onClick={() => this.onClick({ x: x + 1, y: y + 1 })}
                             style={{ width: '40px', height: '40px', backgroundColor: 'gray' }}
-                            // key={`${x}-${y}`}
+                            key={`${x}-${y}`}
                           >
-                            9
+                            N
                           </div>
                         ))}
                     </div>
                   ))
-              : this.state.field.map(row => (
-                  <div style={{ display: 'flex' }}>
+              : this.state.field.map((row, i) => (
+                  <div key={`test-${i}`} style={{ display: 'flex' }}>
                     {row.map(({ x, y, mine }) => (
                       <div
-                        style={{ width: '40px', height: '40px', backgroundColor: 'gray' }}
+                        style={{
+                          width: '40px',
+                          height: '40px',
+                          backgroundColor: 'gray'
+                        }}
                         key={`${x}-${y}`}
                         onClick={() => this.onClick({ x, y })}
                       >
                         {this.isOpened({ x, y })
-                          ? // true
-                            mine
-                            ? 'X'
+                          ? mine
+                            ? 'M'
                             : this.getMineCountByCoord({ x, y }, this.state.field)
-                          : '?'}
+                          : // '?'
+                            `(${this.getMineCountByCoord({ x, y }, this.state.field)})`}
                       </div>
                     ))}
                   </div>
