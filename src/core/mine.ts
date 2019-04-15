@@ -4,7 +4,7 @@ import { isCoordEqual, isArrIncludesCoord } from './auxs';
 export const RATES = { normal: 0.12, hard: 0.18, expert: 0.24 };
 
 const generateMines = (x: number, y: number, rate: number, cleanCell: Coord): Coord[] => {
-  const noMineCoords = [cleanCell, ...aroundCoords(cleanCell, x, y)];
+  const noMineCoords = [cleanCell, ...around8Coords(cleanCell, x, y)];
   let mineCount = Math.floor(x * y * rate);
   let mines: Coord[] = [];
   while (mineCount > 0) {
@@ -44,7 +44,7 @@ export const generate = (
   return generateField(x, y, mines);
 };
 
-export const aroundCoords = ({ x, y }: Coord, xLength: number, yLength: number): Coord[] => {
+export const around8Coords = ({ x, y }: Coord, xLength: number, yLength: number): Coord[] => {
   let acc: Coord[] = [];
   [x - 1, x, x + 1].forEach(x => {
     [y - 1, y, y + 1].forEach(y => {
@@ -53,3 +53,8 @@ export const aroundCoords = ({ x, y }: Coord, xLength: number, yLength: number):
   });
   return acc.filter(({ x, y }) => x > 0 && xLength >= x && y > 0 && yLength >= y);
 };
+
+export const around4Coords = ({ x, y }: Coord, xLength: number, yLength: number): Coord[] =>
+  [{ x: x - 1, y }, { x: x + 1, y }, { x, y: y - 1 }, { x, y: y + 1 }].filter(
+    ({ x, y }) => x > 0 && xLength >= x && y > 0 && yLength >= y
+  );
